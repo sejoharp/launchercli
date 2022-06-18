@@ -7,45 +7,12 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 )
 
-func homeDir() string {
-	dirname, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatal(err)
-	}
-	return dirname
-}
-
 func main() {
 	configs := readConfig()
-	var items []Item
-	for _, config := range configs {
-		listCommand := exec.Command("bash", "-c", config.List)
-		output, err2 := listCommand.Output()
-		if err2 != nil {
-			log.Fatal(err2)
-		}
-		for _, line := range strings.Split(strings.TrimSuffix(string(output), "\n"), "\n") {
-			item := Item{
-				Name:    filepath.Base(line),
-				Command: config.Command,
-				Path:    line,
-			}
-			items = append(items, item)
-		}
-	}
-
-	//fmt.Println(items)
-	//fmt.Println("ende")
-	//os.Exit(999)
-	//var repos []Item
-	//repos = append(repos, listDirs(homeDir()+"/private/", "code")...)
-	//repos = append(repos, listDirs(homeDir()+"/repos/", "code")...)
-	//repos = append(repos, listDirs(homeDir()+"/private/", "idea")...)
-	//repos = append(repos, listDirs(homeDir()+"/repos/", "idea")...)
+	items := createItems(configs)
 
 	index, err := fuzzyfinder.Find(
 		items,
@@ -60,6 +27,27 @@ func main() {
 		log.Fatal(err)
 	}
 
+}
+
+func createItems(configs []ConfigItem) []Item {
+	var items []Item
+	for _, config := range configs {
+		listCommand := exec.Command("bash", "-c", config.List)
+		output, err2 := listCommand.Output()
+		if err2 != nil {
+			log.Fatal(err2)
+		}
+		for _, line := range strings.Split(strings.TrimSuffix(string(output), "\n"), "\n") {
+			parts := strings.Split(line, ",")
+			item := Item{
+				Name:    parts[0],
+				Command: config.Command,
+				Path:    parts[1],
+			}
+			items = append(items, item)
+		}
+	}
+	return items
 }
 
 func itemFunc(items []Item) func(i int) string {
@@ -77,11 +65,6 @@ func preview(items []Item) func(i int, w int, h int) string {
 	}
 }
 
-type ConfigItem struct {
-	List                  string `json:"list"`
-	LastPartAsDisplayName bool   `json:"lastPartAsDisplayName"`
-	Command               string `json:"command"`
-}
 type Item struct {
 	Name    string
 	Command string
@@ -92,6 +75,11 @@ func (item *Item) DisplayName() string {
 	return item.Command + " " + item.Name
 }
 
+type ConfigItem struct {
+	List    string `json:"list"`
+	Command string `json:"command"`
+}
+
 func readConfig() []ConfigItem {
 	file, err := os.ReadFile(homeDir() + "/.launcher-config.json")
 	if err != nil {
@@ -99,32 +87,15 @@ func readConfig() []ConfigItem {
 	}
 	var configItems []ConfigItem
 	if err := json.Unmarshal(file, &configItems); err != nil {
-		panic(err)
+		log.Fatalf("unable to parse config file, error: %v", err)
 	}
 	return configItems
 }
 
-func listDirs(path string, command string) []Item {
-	dirHandle, err := os.Open(path)
+func homeDir() string {
+	dirname, err := os.UserHomeDir()
 	if err != nil {
-		log.Fatalf("directory not found %s, error %v", path, err)
-		return nil
+		log.Fatal(err)
 	}
-	dirs, err := dirHandle.Readdirnames(-1)
-	if err != nil {
-		log.Fatalf("error reading directory for %s, error %v", path, err)
-		return []Item{}
-	}
-	var items []Item
-	for _, dir := range dirs {
-		if strings.HasPrefix(dir, ".") {
-			continue
-		}
-		items = append(items, Item{
-			Name:    dir,
-			Path:    filepath.Join(path, dir),
-			Command: command,
-		})
-	}
-	return items
+	return dirname
 }
