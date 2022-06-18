@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 )
 
 func main() {
@@ -31,21 +32,15 @@ func main() {
 
 func createItems(configs []ConfigItem) []Item {
 	var items []Item
+	resultChannel := make(chan []Item, len(configs))
+	var wg sync.WaitGroup
 	for _, config := range configs {
-		listCommand := exec.Command("bash", "-c", config.List)
-		output, err2 := listCommand.Output()
-		if err2 != nil {
-			log.Fatal(err2)
-		}
-		for _, line := range strings.Split(strings.TrimSuffix(string(output), "\n"), "\n") {
-			parts := strings.Split(line, ",")
-			item := Item{
-				Name:    parts[0],
-				Command: config.Command,
-				Path:    parts[1],
-			}
-			items = append(items, item)
-		}
+		wg.Add(1)
+		go parseItemsFromConfig(config, &wg, resultChannel)
+	}
+	wg.Wait()
+	for i := 0; i < len(configs); i++ {
+		items = append(items, <-resultChannel...)
 	}
 	return items
 }
@@ -63,6 +58,26 @@ func preview(items []Item) func(i int, w int, h int) string {
 		}
 		return fmt.Sprintf("opening: %s", items[i].Path)
 	}
+}
+
+func parseItemsFromConfig(config ConfigItem, wg *sync.WaitGroup, channel chan []Item) {
+	defer wg.Done()
+	listCommand := exec.Command("bash", "-c", config.List)
+	output, err2 := listCommand.Output()
+	if err2 != nil {
+		log.Fatal(err2)
+	}
+	var items []Item
+	for _, line := range strings.Split(strings.TrimSuffix(string(output), "\n"), "\n") {
+		parts := strings.Split(line, ",")
+		item := Item{
+			Name:    parts[0],
+			Command: config.Command,
+			Path:    parts[1],
+		}
+		items = append(items, item)
+	}
+	channel <- items
 }
 
 type Item struct {
