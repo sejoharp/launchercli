@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/ktr0731/go-fuzzyfinder"
 	"log"
@@ -19,20 +20,41 @@ func homeDir() string {
 }
 
 func main() {
-	var repos []Item
-	repos = append(repos, listDirs(homeDir()+"/private/", "code")...)
-	repos = append(repos, listDirs(homeDir()+"/repos/", "code")...)
-	repos = append(repos, listDirs(homeDir()+"/private/", "idea")...)
-	repos = append(repos, listDirs(homeDir()+"/repos/", "idea")...)
+	configs := readConfig()
+	var items []Item
+	for _, config := range configs {
+		listCommand := exec.Command("bash", "-c", config.List)
+		output, err2 := listCommand.Output()
+		if err2 != nil {
+			log.Fatal(err2)
+		}
+		for _, line := range strings.Split(strings.TrimSuffix(string(output), "\n"), "\n") {
+			item := Item{
+				Name:    filepath.Base(line),
+				Command: config.Command,
+				Path:    line,
+			}
+			items = append(items, item)
+		}
+	}
+
+	//fmt.Println(items)
+	//fmt.Println("ende")
+	//os.Exit(999)
+	//var repos []Item
+	//repos = append(repos, listDirs(homeDir()+"/private/", "code")...)
+	//repos = append(repos, listDirs(homeDir()+"/repos/", "code")...)
+	//repos = append(repos, listDirs(homeDir()+"/private/", "idea")...)
+	//repos = append(repos, listDirs(homeDir()+"/repos/", "idea")...)
 
 	index, err := fuzzyfinder.Find(
-		repos,
-		itemFunc(repos),
-		fuzzyfinder.WithPreviewWindow(preview(repos)))
+		items,
+		itemFunc(items),
+		fuzzyfinder.WithPreviewWindow(preview(items)))
 	if err != nil {
 		log.Fatal(err)
 	}
-	cliCommand := exec.Command(repos[index].Command, repos[index].Path)
+	cliCommand := exec.Command(items[index].Command, items[index].Path)
 	err = cliCommand.Run()
 	if err != nil {
 		log.Fatal(err)
@@ -40,21 +62,26 @@ func main() {
 
 }
 
-func itemFunc(repos []Item) func(i int) string {
+func itemFunc(items []Item) func(i int) string {
 	return func(i int) string {
-		return repos[i].DisplayName()
+		return items[i].DisplayName()
 	}
 }
 
-func preview(repos []Item) func(i int, w int, h int) string {
+func preview(items []Item) func(i int, w int, h int) string {
 	return func(i, w, h int) string {
 		if i == -1 {
 			return ""
 		}
-		return fmt.Sprintf("opening: %s", repos[i].Path)
+		return fmt.Sprintf("opening: %s", items[i].Path)
 	}
 }
 
+type ConfigItem struct {
+	List                  string `json:"list"`
+	LastPartAsDisplayName bool   `json:"lastPartAsDisplayName"`
+	Command               string `json:"command"`
+}
 type Item struct {
 	Name    string
 	Command string
@@ -63,6 +90,18 @@ type Item struct {
 
 func (item *Item) DisplayName() string {
 	return item.Command + " " + item.Name
+}
+
+func readConfig() []ConfigItem {
+	file, err := os.ReadFile(homeDir() + "/.launcher-config.json")
+	if err != nil {
+		log.Fatalf("unable to read config file, error: %v", err)
+	}
+	var configItems []ConfigItem
+	if err := json.Unmarshal(file, &configItems); err != nil {
+		panic(err)
+	}
+	return configItems
 }
 
 func listDirs(path string, command string) []Item {
