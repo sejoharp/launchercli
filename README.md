@@ -26,6 +26,8 @@ e.g. `myrepo,/home/user/repos/myrepo`
 It should contain the command you want to execute with the directory from the `list` command.  
 e.g. `code /home/user/repos/myrepo`
 
+### execution
+Call the binary. It will show a list with all entries. Start typing to narrow down the option. Press enter to execute the command. 
 ## Build from source
 ### Prerequisites
 1. Install `go`  
