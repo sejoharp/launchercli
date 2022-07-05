@@ -1,3 +1,4 @@
 .idea/
-q.iml
-launcher-darwin-amd64
+.vscode/
+launchercli.iml
+launcher*
