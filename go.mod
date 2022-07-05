@@ -1,4 +1,4 @@
-module github.com/sejoharp/q
+module github.com/sejoharp/launchercli
 
 go 1.18
 
