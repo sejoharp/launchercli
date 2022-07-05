@@ -16,7 +16,7 @@ func main() {
 	index, err := fuzzyfinder.Find(
 		items,
 		itemFunc(items),
-		fuzzyfinder.WithPreviewWindow(preview(items)))
+		fuzzyfinder.WithPreviewWindow(previewFunc(items)))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -41,21 +41,6 @@ func createItems(configs []ConfigItem) []Item {
 		items = append(items, <-resultChannel...)
 	}
 	return items
-}
-
-func itemFunc(items []Item) func(i int) string {
-	return func(i int) string {
-		return items[i].DisplayName()
-	}
-}
-
-func preview(items []Item) func(i int, w int, h int) string {
-	return func(i, w, h int) string {
-		if i == -1 {
-			return ""
-		}
-		return fmt.Sprintf("opening: %s", items[i].Path)
-	}
 }
 
 func parseItemsFromConfig(config ConfigItem, wg *sync.WaitGroup, channel chan []Item) {
@@ -86,4 +71,19 @@ type Item struct {
 
 func (item *Item) DisplayName() string {
 	return item.Command + " " + item.Name
+}
+
+func itemFunc(items []Item) func(index int) string {
+	return func(index int) string {
+		return items[index].DisplayName()
+	}
+}
+
+func previewFunc(items []Item) func(i int, w int, h int) string {
+	return func(i, w, h int) string {
+		if i == -1 {
+			return ""
+		}
+		return fmt.Sprintf("opening: %s", items[i].Path)
+	}
 }
