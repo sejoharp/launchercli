@@ -1,0 +1,6 @@
+[
+  {
+    "list": "for directory in $(ls -d /home/user/repos/*); do echo $(basename $directory),$directory;done",
+    "command": "code"
+  }
+]

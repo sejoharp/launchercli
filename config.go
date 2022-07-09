@@ -6,8 +6,8 @@ import (
 	"os"
 )
 
-func readConfig() []ConfigItem {
-	file, err := os.ReadFile(homeDir() + "/.launcher-config.json")
+func readAndParseConfigFile(pathToConfigFile string) []ConfigItem {
+	file, err := os.ReadFile(pathToConfigFile)
 	if err != nil {
 		log.Fatalf("unable to read config file, error: %v", err)
 	}
@@ -16,14 +16,6 @@ func readConfig() []ConfigItem {
 		log.Fatalf("unable to parse config file, error: %v", err)
 	}
 	return configItems
-}
-
-func homeDir() string {
-	dirname, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatal(err)
-	}
-	return dirname
 }
 
 type ConfigItem struct {

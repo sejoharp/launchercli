@@ -2,15 +2,26 @@ package main
 
 import (
 	"fmt"
-	"github.com/ktr0731/go-fuzzyfinder"
 	"log"
+	"os"
 	"os/exec"
 	"strings"
 	"sync"
+
+	"github.com/ktr0731/go-fuzzyfinder"
 )
 
+func homeDir() string {
+	dirname, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return dirname
+}
+
 func main() {
-	configs := readConfig()
+	path := homeDir() + "/.launcher-config.json"
+	configs := readAndParseConfigFile(path)
 	items := createItems(configs)
 
 	index, err := fuzzyfinder.Find(
