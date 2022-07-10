@@ -39,16 +39,20 @@ func partsToLaunchCommand(config ConfigItem, parts []string) LaunchCommand {
 	}
 }
 
-// TODO extract bash command to make it testable
-func parseLaunchCommandsFromConfigItem(config ConfigItem, wg *sync.WaitGroup, channel chan []LaunchCommand) {
-	defer wg.Done()
-	listCommand := exec.Command("bash", "-c", config.List)
+func execListCommand(listCommandString string) string {
+	listCommand := exec.Command("bash", "-c", listCommandString)
 	output, err := listCommand.Output()
 	if err != nil {
 		log.Fatal(err)
 	}
+	return string(output)
+}
+
+func parseLaunchCommandsFromConfigItem(config ConfigItem, wg *sync.WaitGroup, channel chan []LaunchCommand) {
+	defer wg.Done()
+	output := execListCommand(config.List)
 	var launchCommands []LaunchCommand
-	for _, line := range strings.Split(strings.TrimSuffix(string(output), "\n"), "\n") {
+	for _, line := range strings.Split(strings.TrimSuffix(output, "\n"), "\n") {
 		parts := strings.Split(line, ",")
 		launchCommand := partsToLaunchCommand(config, parts)
 		launchCommands = append(launchCommands, launchCommand)
