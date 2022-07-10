@@ -19,6 +19,7 @@ func readAndParseConfigFile(pathToConfigFile string) []ConfigItem {
 }
 
 type ConfigItem struct {
-	List    string `json:"list"`
-	Command string `json:"command"`
+	DisplayName string `json:"display_name"`
+	List        string `json:"list"`
+	Command     string `json:"command"`
 }
