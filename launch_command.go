@@ -8,6 +8,7 @@ import (
 	"sync"
 )
 
+// TODO maybe move bash-command even out of here to test parallelism?
 func createLaunchCommands(configs []ConfigItem) []LaunchCommand {
 	var launchCommands []LaunchCommand
 	resultChannel := make(chan []LaunchCommand, len(configs))
@@ -23,6 +24,22 @@ func createLaunchCommands(configs []ConfigItem) []LaunchCommand {
 	return launchCommands
 }
 
+// TODO find a better function name
+func partsToLaunchCommand(config ConfigItem, parts []string) LaunchCommand {
+	displayName := config.DisplayName
+	command := config.Command
+	// TODO move to separate function and call twice (displayname and command)
+	for i := 0; i < len(parts); i++ {
+		displayName = strings.Replace(displayName, fmt.Sprintf("{%d}", i), parts[i], -1)
+		command = strings.Replace(command, fmt.Sprintf("{%d}", i), parts[i], -1)
+	}
+	return LaunchCommand{
+		DisplayName: displayName,
+		Command:     command,
+	}
+}
+
+// TODO extract bash command to make it testable
 func parseLaunchCommandsFromConfigItem(config ConfigItem, wg *sync.WaitGroup, channel chan []LaunchCommand) {
 	defer wg.Done()
 	listCommand := exec.Command("bash", "-c", config.List)
@@ -33,37 +50,30 @@ func parseLaunchCommandsFromConfigItem(config ConfigItem, wg *sync.WaitGroup, ch
 	var launchCommands []LaunchCommand
 	for _, line := range strings.Split(strings.TrimSuffix(string(output), "\n"), "\n") {
 		parts := strings.Split(line, ",")
-		launchCommand := LaunchCommand{
-			Name:    parts[0],
-			Command: config.Command,
-			Path:    parts[1],
-		}
+		launchCommand := partsToLaunchCommand(config, parts)
 		launchCommands = append(launchCommands, launchCommand)
 	}
 	channel <- launchCommands
 }
 
 type LaunchCommand struct {
-	Name    string
-	Command string
-	Path    string
+	DisplayName string
+	Command     string
 }
 
-func (launchCommand *LaunchCommand) DisplayName() string {
-	return launchCommand.Command + " " + launchCommand.Name
-}
-
+// TODO test me
 func launchCommandsFunc(launchCommands []LaunchCommand) func(index int) string {
 	return func(index int) string {
-		return launchCommands[index].DisplayName()
+		return launchCommands[index].DisplayName
 	}
 }
 
+// TODO test me
 func previewFunc(launchCommands []LaunchCommand) func(i int, w int, h int) string {
 	return func(i, w, h int) string {
 		if i == -1 {
 			return ""
 		}
-		return fmt.Sprintf("opening: %s", launchCommands[i].Path)
+		return fmt.Sprintf("opening: %s", launchCommands[i].Command)
 	}
 }

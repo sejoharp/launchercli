@@ -1,6 +1,12 @@
 [
   {
+    "display_name": "code {0}",
     "list": "for directory in $(ls -d /home/user/repos/*); do echo $(basename $directory),$directory;done",
-    "command": "code"
+    "command": "code {1}"
+  },
+  {
+    "display_name": "actions {0}",
+    "list": "for directory in $(ls -d /home/user/repos/*); do echo $(basename $directory);done",
+    "command": "open https://github.com/company/{0}/actions"
   }
 ]

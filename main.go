@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/ktr0731/go-fuzzyfinder"
 )
@@ -28,7 +29,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	cliCommand := exec.Command(launchCommands[index].Command, launchCommands[index].Path)
+	before, after, _ := strings.Cut(launchCommands[index].Command, " ")
+	cliCommand := exec.Command(before, after)
 	err = cliCommand.Run()
 	if err != nil {
 		log.Fatal(err)
