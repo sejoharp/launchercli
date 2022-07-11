@@ -48,6 +48,7 @@ func execListCommand(listCommandString string) string {
 	return string(output)
 }
 
+// TODO test me
 func parseLaunchCommandsFromConfigItem(config ConfigItem, wg *sync.WaitGroup, channel chan []LaunchCommand) {
 	defer wg.Done()
 	output := execListCommand(config.List)
