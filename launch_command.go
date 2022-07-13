@@ -39,8 +39,8 @@ func partsToLaunchCommand(config ConfigItem, parts []string) LaunchCommand {
 	}
 }
 
-func execListCommand(listCommandString string) string {
-	listCommand := exec.Command("bash", "-c", listCommandString)
+func execShellCommand(commandString string) string {
+	listCommand := exec.Command("bash", "-c", commandString)
 	output, err := listCommand.Output()
 	if err != nil {
 		log.Fatal(err)
@@ -51,7 +51,7 @@ func execListCommand(listCommandString string) string {
 // TODO test me
 func parseLaunchCommandsFromConfigItem(config ConfigItem, wg *sync.WaitGroup, channel chan []LaunchCommand) {
 	defer wg.Done()
-	output := execListCommand(config.List)
+	output := execShellCommand(config.List)
 	var launchCommands []LaunchCommand
 	for _, line := range strings.Split(strings.TrimSuffix(output, "\n"), "\n") {
 		parts := strings.Split(line, ",")
