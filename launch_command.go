@@ -28,15 +28,17 @@ func toLaunchCommand(config ConfigItem, line string) LaunchCommand {
 	parts := strings.Split(line, ",")
 	displayName := config.DisplayName
 	command := config.Command
-	// TODO move to separate function and call twice (displayname and command)
-	for i := 0; i < len(parts); i++ {
-		displayName = strings.Replace(displayName, fmt.Sprintf("{%d}", i), parts[i], -1)
-		command = strings.Replace(command, fmt.Sprintf("{%d}", i), parts[i], -1)
-	}
 	return LaunchCommand{
-		DisplayName: displayName,
-		Command:     command,
+		DisplayName: replacePlaceholder(displayName, parts),
+		Command:     replacePlaceholder(command, parts),
 	}
+}
+
+func replacePlaceholder(placeholderString string, parts []string) string {
+	for i := 0; i < len(parts); i++ {
+		placeholderString = strings.Replace(placeholderString, fmt.Sprintf("{%d}", i), parts[i], -1)
+	}
+	return placeholderString
 }
 
 func execShellCommand(commandString string) string {
