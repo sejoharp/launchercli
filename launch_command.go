@@ -24,8 +24,8 @@ func createLaunchCommands(configs []ConfigItem) []LaunchCommand {
 	return launchCommands
 }
 
-// TODO find a better function name
-func partsToLaunchCommand(config ConfigItem, parts []string) LaunchCommand {
+func toLaunchCommand(config ConfigItem, line string) LaunchCommand {
+	parts := strings.Split(line, ",")
 	displayName := config.DisplayName
 	command := config.Command
 	// TODO move to separate function and call twice (displayname and command)
@@ -54,8 +54,7 @@ func parseLaunchCommandsFromConfigItem(config ConfigItem, wg *sync.WaitGroup, ch
 	output := execShellCommand(config.List)
 	var launchCommands []LaunchCommand
 	for _, line := range strings.Split(strings.TrimSuffix(output, "\n"), "\n") {
-		parts := strings.Split(line, ",")
-		launchCommand := partsToLaunchCommand(config, parts)
+		launchCommand := toLaunchCommand(config, line)
 		launchCommands = append(launchCommands, launchCommand)
 	}
 	channel <- launchCommands
